@@ -1,0 +1,59 @@
+"""Subscription database model."""
+from datetime import datetime
+from typing import TYPE_CHECKING
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    func,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.subscriber import Subscriber
+    from app.models.plan import Plan
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    subscriber_id: Mapped[int] = mapped_column(
+        ForeignKey("subscribers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    plan_id: Mapped[int] = mapped_column(
+        ForeignKey("plans.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    start_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    end_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, index=True
+    )
+    auto_renew: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    subscriber: Mapped["Subscriber"] = relationship(
+        "Subscriber", back_populates="subscriptions"
+    )
+    plan: Mapped["Plan"] = relationship("Plan", back_populates="subscriptions")
+
+    def __repr__(self) -> str:
+        return f"<Subscription id={self.id} subscriber_id={self.subscriber_id} plan_id={self.plan_id} active={self.is_active}>"
